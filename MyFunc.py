@@ -36,20 +36,19 @@ def train(input_variable, target_variable, encoder, decoder,
         decoder_output, decoder_context, decoder_hidden, decoder_attention \
             = decoder(decoder_input, decoder_context,
                       decoder_hidden, encoder_outputs)
-        loss += criterion(decoder_output[0], target_variable[di])
+        loss += criterion(decoder_output, target_variable[di])
         ## what is the shape of loss?
 
-        topv, topi = decoder_output.data.topk(1)  # value and index of the top 1 max
-        ni = topi[0][0]
-        ## output size 怕不是 vocabsize ?!!
+        topv, topi = decoder_output.data.topk(1)  # value and index of the top 1 max. topi is longtensor 1*1
 
-        decoder_input = Variable(torch.LongTensor([[ni]]))
-        ## why two [[]] !!??
+        decoder_input = Variable(topi)
 
-        if USE_CUDA: decoder_input = decoder_input.cuda()
+        if USE_CUDA:
+            decoder_input = decoder_input.cuda()
 
         # Stop at end of sentence (not necessary when using known targets)
-        if ni == EOS_token: break
+        if topi[0][0] == EOS_token:
+            break
 
     loss.backward()
     torch.nn.utils.clip_grad_norm(encoder.parameters(), clip)

@@ -1,4 +1,5 @@
 import math
+import os
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -7,6 +8,51 @@ import torch.nn.functional as F
 import numpy as np
 import nltk
 from MySetting import *
+
+class GigaLoader:
+    def __init__(self, start_line, end_line):
+        self.start_line = start_line
+        self.end_line = end_line
+        self.lines = []
+
+        if start_line < 0 or end_line > 500000:
+            raise Exception("giga read too many lines!")
+
+        # load to self.line as [  line[ line0[ 'wo','wd'], line1] ]
+        with open(giga_Path) as file:
+            for _ in range(start_line):
+                file.readline()
+            for index in range(start_line, end_line + 1):
+                line = file.readline().strip('\n').lower()
+                if line.count('\t') < 2:
+                    continue
+                line = line.split('\t')
+                line.pop(0)
+                for i, sent in enumerate(line):
+                    line[i] = sent.split()
+
+                # process the paragraph
+                for i, word in enumerate(line[0]):
+                    try:
+                        float(word)
+                    except ValueError:
+                        pass
+                    else:
+                        line[0][i] = '#'
+                for i, word in enumerate(line[1]):
+                    try:
+                        float(word)
+                    except ValueError:
+                        pass
+                    else:
+                        line[1][i] = '#'
+
+                self.lines.append(line)
+        # [
+        #     [[],[]]
+        # ]
+
+
 
 class Lang:
     '''
@@ -35,6 +81,11 @@ class Lang:
         else:
             self.word2count[word] += 1
 
+    def index_giga(self, giga):
+        for item in giga.lines:
+            for sect in item:
+                for word in sect:
+                    self.index_word(word)
 
 class wordVector:
     # this is a outer vector loader
@@ -130,7 +181,7 @@ class Attn(nn.Module):
             attn_energies[i] = self.score(hidden, encoder_outputs[i])
 
         # Normalize energies. seq_len => 1 x 1 x seq_len
-        return F.softmax(attn_energies).unsqueeze(0).unsqueeze(0)
+        return F.softmax(attn_energies, dim=0).view(1, 1, -1)
 
     def score(self, hidden, encoder_output):
         energy = self.attn(encoder_output)  # hidden_size => hidden_size Linear net
@@ -175,22 +226,25 @@ class AttnDecoder(nn.Module):
         word_embedded = self.embedding(word_input).view(1, 1, -1)  # => 1* 1* hidden
         rnn_input = torch.cat((word_embedded, last_context.unsqueeze(0)), 2)  # 1* 1* 2hidden
 
-        rnn_output, hidden = self.gru(rnn_input, last_hidden)  # 1* 1* hidden, 1* 1* hidden
+        rnn_output, hidden = self.gru(rnn_input, last_hidden)  # 1* 1* hidden, 2* 1* hidden
 
         attn_weights = self.attn(rnn_output.squeeze(0), encoder_outputs)  # 1* 1* seq
 
         context = attn_weights.bmm(encoder_outputs.transpose(0, 1))
 
-        rnn_output = rnn_output.squeeze(0)  # S=1 x B x N -> B x N
-        context = context.squeeze(1)  # B x S=1 x N -> B x N
-        output = F.log_softmax(self.out(torch.cat((rnn_output, context), 1)))
+        rnn_output = rnn_output.squeeze(0)  # (S=1) x B x N -> B x N
+        context = context.squeeze(1)  # B x (S=1) x N -> B x N
+
+        rawout = self.out(torch.cat((rnn_output, context), dim=-1))
+
+        output = F.log_softmax(rawout, dim=-1)
 
         return output, context, hidden, attn_weights
 
     def copyinit_hidden(self, mode):
         '''
-        :param mode: [n_layer, 1, hidden_size]
-        :return: [n_layer, 1, hidden_szie]
+        :param mode: [n_layer(EN), 1, hidden_size]
+        :return: [n_layer(DE), 1, hidden_szie]
         '''
         hidden = Variable(torch.zeros(self.n_layers, 1, self.hidden_size))
         if len(mode) == self.n_layers:
