@@ -15,7 +15,7 @@ class GigaLoader:
         self.end_line = end_line
         self.lines = []
 
-        if start_line < 0 or end_line > 500000:
+        if start_line < 0 or end_line > 5089620:
             raise Exception("giga read too many lines!")
 
         # load to self.line as [  line[ line0[ 'wo','wd'], line1] ]
