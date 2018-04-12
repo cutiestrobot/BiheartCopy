@@ -10,9 +10,7 @@ def train(input_variable, target_variable, encoder, decoder,
           encoder_optimizer, decoder_optimizer,
           criterion, clip=5.0):
 
-    encoder_optimizer.zero_grad()
-    decoder_optimizer.zero_grad()
-    loss = 0                                                 # added onto for each word
+    loss = 0     # added onto for each word
     target_length = target_variable.size()[0]
 
     # Run words through encoder
@@ -32,6 +30,8 @@ def train(input_variable, target_variable, encoder, decoder,
         # model is already cudaed outside
 
     # start decoder
+    predict = []
+
     for di in range(target_length):
         decoder_output, decoder_context, decoder_hidden, decoder_attention \
             = decoder(decoder_input, decoder_context,
@@ -39,22 +39,37 @@ def train(input_variable, target_variable, encoder, decoder,
         loss += criterion(decoder_output, target_variable[di])
         ## what is the shape of loss?
 
-        topv, topi = decoder_output.data.topk(1)  # value and index of the top 1 max. topi is longtensor 1*1
+        topv, topi = decoder_output.data.topk(1)
+        # value and index of the top 1 max. topi is longtensor of 1*1
+
+        predict.append(topi[0][0])
+        if topi[0][0] == EOS_token:
+            break
 
         decoder_input = Variable(topi)
 
         if USE_CUDA:
             decoder_input = decoder_input.cuda()
 
-        # Stop at end of sentence (not necessary when using known targets)
-        if topi[0][0] == EOS_token:
-            break
 
+
+    encoder_optimizer.zero_grad()
+    decoder_optimizer.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm(encoder.parameters(), clip)
     torch.nn.utils.clip_grad_norm(decoder.parameters(), clip)
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.data[0] / target_length
+    return loss.data[0] / target_length, predict
+
+
+def print_row(row, lang):
+    for i in row:
+        #try:
+        print(lang.index2word[int(i)], end=' ')
+        # finally:
+        #     raise Exception("strange type")
+    print('')
+
 

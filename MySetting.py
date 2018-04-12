@@ -3,7 +3,7 @@ OUT_VECTOR = True
 SOS_token = 0
 EOS_token = 1
 h_size = 300
-SAVE_TIME = 60*30
+SAVE_TIME = 60*10
 
 wv_Path = "/home/ydguo/BiMind/lexvec.vectors"
 net_Path = "/home/ydguo/BiMind/net/"

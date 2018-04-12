@@ -29,9 +29,8 @@ class GigaLoader:
                 line = line.split('\t')
                 line.pop(0)
                 for i, sent in enumerate(line):
-                    line[i] = sent.split()
-
-                # process the paragraph
+                    line[i] = ("SOS " + sent + " EOS").split()
+                # process the paragraph part
                 for i, word in enumerate(line[0]):
                     try:
                         float(word)
@@ -39,6 +38,7 @@ class GigaLoader:
                         pass
                     else:
                         line[0][i] = '#'
+                # process the title part
                 for i, word in enumerate(line[1]):
                     try:
                         float(word)
@@ -86,6 +86,7 @@ class Lang:
             for sect in item:
                 for word in sect:
                     self.index_word(word)
+
 
 class wordVector:
     # this is a outer vector loader
