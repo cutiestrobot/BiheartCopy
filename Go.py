@@ -38,10 +38,12 @@ loading[1017]=(5086018,5089618);
 
 
 for epoch in range(2):
+    piece_cnt=0
     random.shuffle(loading_plan)
     for start, end in loading_plan:
+        piece_cnt=piece_cnt+1
         giga = mc.GigaLoader(start, end)
-
+        print("now loading ",piece_cnt,"piece/1018 total piseces")
         train = []
         for pair in giga.lines:
             xi = [lang.word2index[x] for x in pair[0]]
