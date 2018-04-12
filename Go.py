@@ -9,6 +9,7 @@ from MySetting import *
 import shelve
 import datetime
 import os
+import random
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -27,11 +28,17 @@ criterion = nn.NLLLoss()
 start_time = time.time()
 
 #loading data you need
-loading_plan = [(1, 15000), (15001, 21000), (21001, 25000), (25001, 30000),
-                (30001, 35000), (36000, 41000), (41001, 51000), (51001,61000)]
+#create the loading_plan
+loading_plan=[]
+temp=1;
+for i in range(1018):
+    loading_plan.append((temp,temp+5000))
+    temp=temp+5001
+loading[1017]=(5086018,5089618);
 
 
 for epoch in range(2):
+    random.shuffle(loading_plan)
     for start, end in loading_plan:
         giga = mc.GigaLoader(start, end)
 
