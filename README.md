@@ -14,3 +14,8 @@
 
 > ### **2018.08.02**
 * plan for today : figure out why the numpy error and fix it
+
+</br>
+
+> ### **2018.08.04**
+* 这是清华镜像凉了 连python3.6都装不了的一天
