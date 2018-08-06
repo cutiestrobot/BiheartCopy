@@ -24,4 +24,5 @@
 > ### **2018.08.05**
 * 解决了服务器上pytorch0.4 的安装问题
 * 服务器连不上网没关系 ， clone 一下root 环境 ， 再把torch重新安装解决问题
-
+* conda install --offline 是好东西
+* ~/.condarc 这个设置下载url的文件改改也很方便 可惜就是上不了网
